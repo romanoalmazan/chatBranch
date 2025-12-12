@@ -49,6 +49,13 @@ export async function getBranchesHandler(req: Request, res: Response): Promise<v
     const branches = await getConversationBranches(conversationId);
     res.json(branches);
   } catch (error) {
+    // Handle NOT_FOUND (code 5) as empty array - conversation doesn't exist yet
+    if (error instanceof Error && (error as any).code === 5) {
+      console.log(`[Firestore] Conversation ${req.params.conversationId} not found, returning empty array`);
+      res.json([]);
+      return;
+    }
+    
     console.error('Error getting branches:', error);
     res.status(500).json({
       error: 'Internal server error',
@@ -74,6 +81,13 @@ export async function getBranchMessagesHandler(req: Request, res: Response): Pro
     const messagesWithIds = await loadBranchMessagesWithIds(conversationId, branchId);
     res.json(messagesWithIds);
   } catch (error) {
+    // Handle NOT_FOUND (code 5) as 404 - branch/collection doesn't exist yet
+    if (error instanceof Error && (error as any).code === 5) {
+      console.log(`[Firestore] Branch ${req.params.branchId} not found, returning empty array`);
+      res.json([]);
+      return;
+    }
+    
     console.error('Error getting branch messages:', error);
     res.status(500).json({
       error: 'Internal server error',

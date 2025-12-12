@@ -13,6 +13,7 @@ export function useChat(conversationId: string, branchId: string) {
   useEffect(() => {
     if (conversationId && currentBranchId) {
       setIsLoadingHistory(true);
+      setError(null); // Clear any previous errors
       loadConversation(conversationId, currentBranchId)
         .then((loadedMessages) => {
           setMessages(loadedMessages);
@@ -20,7 +21,13 @@ export function useChat(conversationId: string, branchId: string) {
         })
         .catch((err) => {
           console.error('Failed to load conversation:', err);
-          setMessages([]);
+          // If it's a 404 or NOT_FOUND, that's fine - just means no messages yet
+          if (err instanceof Error && (err.message.includes('404') || err.message.includes('NOT_FOUND'))) {
+            setMessages([]);
+          } else {
+            // Only set error for real errors, not "not found"
+            setError(err instanceof Error ? err.message : 'Failed to load conversation');
+          }
           setIsLoadingHistory(false);
         });
     }

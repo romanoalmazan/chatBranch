@@ -54,7 +54,7 @@ export default function BranchSidebar({
   };
 
   return (
-    <aside className="w-64 bg-gray-100 border-r border-gray-300 p-4 hidden md:block overflow-y-auto">
+    <aside className="w-64 bg-gray-100 border-r border-gray-300 p-4 hidden md:block overflow-y-auto h-full flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-700">Branches</h2>
         <button

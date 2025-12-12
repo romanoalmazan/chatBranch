@@ -137,23 +137,30 @@ export async function getOrCreateBranch(
   } else {
     // Create new branch
     const now = new Date();
-    const branch: Omit<Branch, 'id' | 'conversationId'> = {
-      parentBranchId,
-      parentMessageId,
-      createdAt: now,
-      updatedAt: now,
+    
+    // Build the branch data object, excluding undefined values
+    const branchData: any = {
+      createdAt: Firestore.Timestamp.fromDate(now),
+      updatedAt: Firestore.Timestamp.fromDate(now),
     };
     
-    await branchRef.set({
-      ...branch,
-      createdAt: Firestore.Timestamp.fromDate(branch.createdAt),
-      updatedAt: Firestore.Timestamp.fromDate(branch.updatedAt),
-    });
+    // Only include optional fields if they are defined
+    if (parentBranchId !== undefined) {
+      branchData.parentBranchId = parentBranchId;
+    }
+    if (parentMessageId !== undefined) {
+      branchData.parentMessageId = parentMessageId;
+    }
+    
+    await branchRef.set(branchData);
     
     return {
       id: branchId,
       conversationId,
-      ...branch,
+      parentBranchId,
+      parentMessageId,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 }

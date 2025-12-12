@@ -18,8 +18,16 @@ export default function MessageList({ messages, onBranch, isCreatingBranch }: Me
 
   if (messages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        <p>Start a conversation by sending a message below.</p>
+      <div className="flex flex-col items-center justify-center h-full text-gray-500 px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-2">Welcome to BranchMind</h2>
+          <p className="text-gray-600 mb-4">
+            Start a conversation by typing a message in the input box below.
+          </p>
+          <p className="text-sm text-gray-500">
+            You can create conversation branches from any assistant response to explore different conversation paths.
+          </p>
+        </div>
       </div>
     );
   }

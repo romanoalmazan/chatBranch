@@ -59,22 +59,34 @@ function App() {
     [createBranchFromMessage]
   );
 
+  const handleNewChat = useCallback(() => {
+    // Create a new conversation
+    const newConversationId = uuidv4();
+    setConversationId(newConversationId);
+    setBranchId('main');
+    // Clear localStorage will happen automatically via useEffect
+  }, []);
+
   return (
-    <Layout>
-      <BranchSidebar
-        conversationId={conversationId}
-        currentBranchId={branchId}
-        onSwitchBranch={handleSwitchBranch}
-      />
-      <ChatWindow
-        messages={messages}
-        onSendMessage={sendMessage}
-        isLoading={isLoading}
-        isLoadingHistory={isLoadingHistory}
-        error={error}
-        onBranch={handleCreateBranch}
-        isCreatingBranch={isLoading}
-      />
+    <Layout onNewChat={handleNewChat}>
+      <div className="flex h-full">
+        <BranchSidebar
+          conversationId={conversationId}
+          currentBranchId={branchId}
+          onSwitchBranch={handleSwitchBranch}
+        />
+        <div className="flex-1 flex flex-col min-h-0">
+          <ChatWindow
+            messages={messages}
+            onSendMessage={sendMessage}
+            isLoading={isLoading}
+            isLoadingHistory={isLoadingHistory}
+            error={error}
+            onBranch={handleCreateBranch}
+            isCreatingBranch={isLoading}
+          />
+        </div>
+      </div>
     </Layout>
   );
 }
