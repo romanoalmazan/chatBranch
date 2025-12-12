@@ -9,6 +9,11 @@ pnpm-lock.yaml
 .env.local
 .env.*.local
 
+# Service account keys (NEVER commit these!)
+*service-account*.json
+*service-account*.key
+chatbranch-service-account.json
+
 # Build outputs
 dist/
 build/

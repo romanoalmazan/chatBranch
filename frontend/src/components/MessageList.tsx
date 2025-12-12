@@ -4,9 +4,11 @@ import MessageComponent from './Message';
 
 interface MessageListProps {
   messages: Message[];
+  onBranch?: (messageId: string) => void;
+  isCreatingBranch?: boolean;
 }
 
-export default function MessageList({ messages }: MessageListProps) {
+export default function MessageList({ messages, onBranch, isCreatingBranch }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -25,7 +27,12 @@ export default function MessageList({ messages }: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
       {messages.map((message) => (
-        <MessageComponent key={message.id} message={message} />
+        <MessageComponent
+          key={message.id}
+          message={message}
+          onBranch={onBranch}
+          isCreatingBranch={isCreatingBranch}
+        />
       ))}
       <div ref={messagesEndRef} />
     </div>

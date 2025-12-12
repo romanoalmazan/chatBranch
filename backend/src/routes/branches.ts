@@ -1,0 +1,84 @@
+import { Request, Response } from 'express';
+import { createBranchFromMessage, getConversationBranches, loadBranchMessages, loadBranchMessagesWithIds } from '../services/firestore';
+
+/**
+ * Create a new branch from a specific message
+ * POST /api/branches
+ */
+export async function createBranchHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { conversationId, parentBranchId, parentMessageId, branchId } = req.body;
+
+    if (!conversationId || !parentBranchId || !parentMessageId) {
+      res.status(400).json({
+        error: 'conversationId, parentBranchId, and parentMessageId are required',
+      });
+      return;
+    }
+
+    const branch = await createBranchFromMessage(
+      conversationId,
+      parentBranchId,
+      parentMessageId,
+      branchId
+    );
+
+    res.json(branch);
+  } catch (error) {
+    console.error('Error creating branch:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+/**
+ * Get all branches for a conversation
+ * GET /api/conversations/:conversationId/branches
+ */
+export async function getBranchesHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { conversationId } = req.params;
+    
+    if (!conversationId) {
+      res.status(400).json({ error: 'conversationId is required' });
+      return;
+    }
+
+    const branches = await getConversationBranches(conversationId);
+    res.json(branches);
+  } catch (error) {
+    console.error('Error getting branches:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+/**
+ * Get messages for a specific branch
+ * GET /api/conversations/:conversationId/branches/:branchId/messages
+ */
+export async function getBranchMessagesHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const { conversationId, branchId } = req.params;
+    
+    if (!conversationId || !branchId) {
+      res.status(400).json({ error: 'conversationId and branchId are required' });
+      return;
+    }
+
+    // Return messages with IDs for frontend to use in branching
+    const messagesWithIds = await loadBranchMessagesWithIds(conversationId, branchId);
+    res.json(messagesWithIds);
+  } catch (error) {
+    console.error('Error getting branch messages:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+

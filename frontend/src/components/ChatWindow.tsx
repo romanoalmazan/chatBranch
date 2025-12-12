@@ -7,14 +7,20 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   isLoading: boolean;
+  isLoadingHistory?: boolean;
   error: string | null;
+  onBranch?: (messageId: string) => void;
+  isCreatingBranch?: boolean;
 }
 
 export default function ChatWindow({
   messages,
   onSendMessage,
   isLoading,
+  isLoadingHistory,
   error,
+  onBranch,
+  isCreatingBranch,
 }: ChatWindowProps) {
   return (
     <div className="flex flex-col h-full">
@@ -26,9 +32,20 @@ export default function ChatWindow({
         </div>
       )}
 
+      {/* Loading history indicator */}
+      {isLoadingHistory && (
+        <div className="px-4 py-2 bg-blue-100 text-blue-700 text-sm">
+          Loading conversation history...
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} />
+        <MessageList
+          messages={messages}
+          onBranch={onBranch}
+          isCreatingBranch={isCreatingBranch}
+        />
       </div>
 
       {/* Loading indicator */}
@@ -39,7 +56,7 @@ export default function ChatWindow({
       )}
 
       {/* Input area */}
-      <MessageInput onSend={onSendMessage} disabled={isLoading} />
+      <MessageInput onSend={onSendMessage} disabled={isLoading || isLoadingHistory} />
     </div>
   );
 }

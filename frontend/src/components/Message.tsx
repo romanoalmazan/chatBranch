@@ -3,10 +3,18 @@ import { Message as MessageType } from '../types/chat';
 
 interface MessageProps {
   message: MessageType;
+  onBranch?: (messageId: string) => void;
+  isCreatingBranch?: boolean;
 }
 
-export default function Message({ message }: MessageProps) {
+export default function Message({ message, onBranch, isCreatingBranch = false }: MessageProps) {
   const isUser = message.role === 'user';
+
+  const handleBranch = () => {
+    if (onBranch && message.id) {
+      onBranch(message.id);
+    }
+  };
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 group`}>
@@ -23,14 +31,14 @@ export default function Message({ message }: MessageProps) {
         <div className={`text-xs text-gray-500 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
           {new Date(message.timestamp).toLocaleTimeString()}
         </div>
-        {/* TODO: Add "Branch from here" button next to assistant messages */}
-        {!isUser && (
+        {!isUser && onBranch && (
           <button
-            className="text-xs text-blue-600 hover:text-blue-800 mt-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
-            disabled
-            title="Branch from here (coming soon)"
+            onClick={handleBranch}
+            disabled={isCreatingBranch}
+            className="text-xs text-blue-600 hover:text-blue-800 mt-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            title="Create a new branch from this message"
           >
-            Branch from here
+            {isCreatingBranch ? 'Creating branch...' : 'Branch from here'}
           </button>
         )}
       </div>

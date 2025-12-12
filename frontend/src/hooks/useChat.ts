@@ -1,15 +1,30 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Message } from '../types/chat';
-import { sendMessage } from '../api/chat';
+import { sendMessage, loadConversation, createBranch } from '../api/chat';
 
-export function useChat() {
+export function useChat(conversationId: string, branchId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conversationId] = useState<string>('demo');
-  const [branchId] = useState<string>('main');
+  const [currentBranchId, setCurrentBranchId] = useState<string>(branchId);
 
-  // TODO: Add branch selection logic when implementing branching feature
+  // Load conversation history on mount or when IDs change
+  useEffect(() => {
+    if (conversationId && currentBranchId) {
+      setIsLoadingHistory(true);
+      loadConversation(conversationId, currentBranchId)
+        .then((loadedMessages) => {
+          setMessages(loadedMessages);
+          setIsLoadingHistory(false);
+        })
+        .catch((err) => {
+          console.error('Failed to load conversation:', err);
+          setMessages([]);
+          setIsLoadingHistory(false);
+        });
+    }
+  }, [conversationId, currentBranchId]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -26,14 +41,14 @@ export function useChat() {
       setError(null);
 
       try {
-        // Convert messages to API format (including the new user message)
-        const apiMessages = [...messages, userMessage].map((msg) => ({
-          role: msg.role as 'user' | 'assistant' | 'system',
-          content: msg.content,
-        }));
+        // Only send the current message - backend will load history
+        const apiMessages = [{
+          role: 'user' as const,
+          content,
+        }];
 
         // Call API
-        const response = await sendMessage(apiMessages, conversationId, branchId);
+        const response = await sendMessage(apiMessages, conversationId, currentBranchId);
 
         // Add assistant response
         const assistantMessage: Message = {
@@ -49,18 +64,60 @@ export function useChat() {
           err instanceof Error ? err.message : 'Failed to send message';
         setError(errorMessage);
         console.error('Error sending message:', err);
+        // Remove the user message on error
+        setMessages((prev) => prev.slice(0, -1));
       } finally {
         setIsLoading(false);
       }
     },
-    [messages, conversationId, branchId]
+    [conversationId, currentBranchId]
+  );
+
+  const switchBranch = useCallback((newBranchId: string) => {
+    setCurrentBranchId(newBranchId);
+    // Messages will be reloaded by the useEffect
+  }, []);
+
+  const handleCreateBranch = useCallback(
+    async (parentMessageId: string) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Create new branch
+        const newBranch = await createBranch(
+          conversationId,
+          currentBranchId,
+          parentMessageId
+        );
+
+        // Automatically switch to new branch
+        setCurrentBranchId(newBranch.id);
+        // Messages will be reloaded by the useEffect
+
+        return newBranch;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to create branch';
+        setError(errorMessage);
+        console.error('Error creating branch:', err);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [conversationId, currentBranchId]
   );
 
   return {
     messages,
     isLoading,
+    isLoadingHistory,
     error,
     sendMessage: handleSendMessage,
+    branchId: currentBranchId,
+    switchBranch,
+    createBranchFromMessage: handleCreateBranch,
   };
 }
 
