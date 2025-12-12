@@ -35,15 +35,6 @@ export function useChat(conversationId: string, branchId: string) {
 
   const handleSendMessage = useCallback(
     async (content: string) => {
-      // Add user message immediately
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
       setError(null);
 
@@ -57,22 +48,15 @@ export function useChat(conversationId: string, branchId: string) {
         // Call API
         const response = await sendMessage(apiMessages, conversationId, currentBranchId);
 
-        // Add assistant response
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: response.messages[0]?.content || 'No response received',
-          timestamp: new Date().toISOString(),
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
+        // Reload conversation to get all messages with correct Firestore IDs
+        // This ensures we have the real IDs for branching
+        const loadedMessages = await loadConversation(conversationId, currentBranchId);
+        setMessages(loadedMessages);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to send message';
         setError(errorMessage);
         console.error('Error sending message:', err);
-        // Remove the user message on error
-        setMessages((prev) => prev.slice(0, -1));
       } finally {
         setIsLoading(false);
       }

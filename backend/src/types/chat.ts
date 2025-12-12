@@ -14,7 +14,8 @@ export interface ChatRequest {
 export interface ChatResponse {
   conversationId: string;
   branchId: string;
-  messages: Message[];
+  messages: Array<Message & { id?: string; timestamp?: string }>;
+  userMessageId?: string; // ID of the saved user message
 }
 
 

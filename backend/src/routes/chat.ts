@@ -49,7 +49,7 @@ export async function chatHandler(req: Request, res: Response): Promise<void> {
     const allMessages: Message[] = [...historyMessages, currentUserMessage];
 
     // Save user message to Firestore
-    await saveMessage(conversationId, branchId, currentUserMessage);
+    const savedUserMessage = await saveMessage(conversationId, branchId, currentUserMessage);
 
     // TODO: Record custom metric: conversationId, branchId
     // TODO: Log structured event: chat request received
@@ -62,13 +62,19 @@ export async function chatHandler(req: Request, res: Response): Promise<void> {
       role: 'assistant',
       content: geminiResponse.content,
     };
-    await saveMessage(conversationId, branchId, assistantMessage);
+    const savedAssistantMessage = await saveMessage(conversationId, branchId, assistantMessage);
 
-    // Build response
+    // Build response with message IDs from Firestore
     const response: ChatResponse = {
       conversationId,
       branchId,
-      messages: [assistantMessage],
+      messages: [{
+        id: savedAssistantMessage.id,
+        role: 'assistant',
+        content: savedAssistantMessage.content,
+        timestamp: savedAssistantMessage.timestamp.toISOString(),
+      }],
+      userMessageId: savedUserMessage.id, // Include user message ID for frontend
     };
 
     // TODO: Log structured event: chat response sent
