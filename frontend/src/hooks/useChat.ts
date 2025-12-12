@@ -35,6 +35,15 @@ export function useChat(conversationId: string, branchId: string) {
 
   const handleSendMessage = useCallback(
     async (content: string) => {
+      // Add user message optimistically (immediately)
+      const tempUserMessage: Message = {
+        id: `temp-user-${Date.now()}`,
+        role: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, tempUserMessage]);
       setIsLoading(true);
       setError(null);
 
@@ -46,10 +55,10 @@ export function useChat(conversationId: string, branchId: string) {
         }];
 
         // Call API
-        const response = await sendMessage(apiMessages, conversationId, currentBranchId);
+        await sendMessage(apiMessages, conversationId, currentBranchId);
 
         // Reload conversation to get all messages with correct Firestore IDs
-        // This ensures we have the real IDs for branching
+        // This ensures we have the real IDs for branching and replaces the temp message
         const loadedMessages = await loadConversation(conversationId, currentBranchId);
         setMessages(loadedMessages);
       } catch (err) {
@@ -57,6 +66,8 @@ export function useChat(conversationId: string, branchId: string) {
           err instanceof Error ? err.message : 'Failed to send message';
         setError(errorMessage);
         console.error('Error sending message:', err);
+        // Remove the optimistic user message on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
       } finally {
         setIsLoading(false);
       }
