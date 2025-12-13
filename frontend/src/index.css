@@ -17,4 +17,20 @@ body {
   flex-direction: column;
 }
 
+/* Math equation styling */
+.katex-display {
+  margin: 1.5em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex-display > .katex {
+  text-align: left;
+}
+
+/* Ensure inline math doesn't break lines awkwardly */
+.katex {
+  white-space: nowrap;
+}
+
 

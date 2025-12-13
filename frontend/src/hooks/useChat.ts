@@ -47,6 +47,16 @@ export function useChat(conversationId: string, branchId: string) {
       setIsLoading(true);
       setError(null);
 
+      // Add a temporary assistant message for streaming effect
+      const tempAssistantId = `temp-assistant-${Date.now()}`;
+      const tempAssistantMessage: Message = {
+        id: tempAssistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempAssistantMessage]);
+
       try {
         // Only send the current message - backend will load history
         const apiMessages = [{
@@ -55,10 +65,33 @@ export function useChat(conversationId: string, branchId: string) {
         }];
 
         // Call API
-        await sendMessage(apiMessages, conversationId, currentBranchId);
+        const response = await sendMessage(apiMessages, conversationId, currentBranchId);
+        const assistantContent = response.messages[0]?.content || '';
+
+        // Simulate typing effect - reveal text gradually
+        if (assistantContent) {
+          const chars = assistantContent.split('');
+          let currentText = '';
+          
+          for (let i = 0; i < chars.length; i++) {
+            currentText += chars[i];
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === tempAssistantId
+                  ? { ...msg, content: currentText }
+                  : msg
+              )
+            );
+            // Variable delay for smoother effect (faster for spaces, slower for punctuation)
+            const delay = chars[i] === ' ' ? 10 : chars[i].match(/[.,!?;:]/) ? 50 : 15;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+
+        // Small delay before replacing with real message
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Reload conversation to get all messages with correct Firestore IDs
-        // This ensures we have the real IDs for branching and replaces the temp message
         const loadedMessages = await loadConversation(conversationId, currentBranchId);
         setMessages(loadedMessages);
       } catch (err) {
@@ -66,8 +99,10 @@ export function useChat(conversationId: string, branchId: string) {
           err instanceof Error ? err.message : 'Failed to send message';
         setError(errorMessage);
         console.error('Error sending message:', err);
-        // Remove the optimistic user message on error
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+        // Remove the optimistic messages on error
+        setMessages((prev) => prev.filter((msg) => 
+          msg.id !== tempUserMessage.id && msg.id !== tempAssistantId
+        ));
       } finally {
         setIsLoading(false);
       }

@@ -23,18 +23,17 @@ export default function ChatWindow({
   isCreatingBranch,
 }: ChatWindowProps) {
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 bg-gray-50">
       {/* Error banner */}
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 flex-shrink-0">
-          <p className="font-semibold">Error</p>
-          <p>{error}</p>
+        <div className="bg-red-50 border-b border-red-200 text-red-700 p-3 flex-shrink-0">
+          <p className="text-sm font-medium">{error}</p>
         </div>
       )}
 
       {/* Loading history indicator */}
       {isLoadingHistory && (
-        <div className="px-4 py-2 bg-blue-100 text-blue-700 text-sm flex-shrink-0">
+        <div className="px-4 py-2 bg-blue-50 text-blue-700 text-sm flex-shrink-0 border-b border-blue-100">
           Loading conversation history...
         </div>
       )}
@@ -48,15 +47,8 @@ export default function ChatWindow({
         />
       </div>
 
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="px-4 py-2 bg-gray-100 text-gray-600 text-sm flex-shrink-0">
-          AI is thinking...
-        </div>
-      )}
-
       {/* Input area - always visible at bottom */}
-      <div className="flex-shrink-0 border-t-2 border-gray-300 bg-white shadow-lg">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200">
         <MessageInput onSend={onSendMessage} disabled={isLoading || isLoadingHistory} />
       </div>
     </div>
