@@ -68,13 +68,17 @@ export function useChat(conversationId: string, branchId: string) {
         const response = await sendMessage(apiMessages, conversationId, currentBranchId);
         const assistantContent = response.messages[0]?.content || '';
 
-        // Simulate typing effect - reveal text gradually
+        // Simulate typing effect - reveal text gradually (20x faster than original)
         if (assistantContent) {
           const chars = assistantContent.split('');
           let currentText = '';
           
-          for (let i = 0; i < chars.length; i++) {
-            currentText += chars[i];
+          // Batch characters for better performance - smaller batches for more visible effect
+          const batchSize = 2; // Process 2 characters at a time
+          
+          for (let i = 0; i < chars.length; i += batchSize) {
+            const batch = chars.slice(i, i + batchSize);
+            currentText += batch.join('');
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === tempAssistantId
@@ -82,8 +86,12 @@ export function useChat(conversationId: string, branchId: string) {
                   : msg
               )
             );
-            // Variable delay for smoother effect (faster for spaces, slower for punctuation)
-            const delay = chars[i] === ' ' ? 10 : chars[i].match(/[.,!?;:]/) ? 50 : 15;
+            // Small delay for visual feedback - 20x faster than original
+            // Original was: spaces 10ms, punctuation 50ms, regular 15ms
+            // 20x faster: spaces 0.5ms, punctuation 2.5ms, regular 0.75ms
+            // We'll use: 0ms spaces, 2ms punctuation, 1ms regular (rounded for practical delays)
+            const lastChar = batch[batch.length - 1];
+            const delay = lastChar === ' ' ? 0 : lastChar?.match(/[.,!?;:]/) ? 2 : 1;
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }

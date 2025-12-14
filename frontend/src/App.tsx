@@ -27,6 +27,9 @@ function App() {
   // Branch panel state
   const [openBranchId, setOpenBranchId] = useState<string | null>(null);
   const [openBranch, setOpenBranch] = useState<Branch | null>(null);
+  
+  // Sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Thread creation modal state
   const [threadCreationMessage, setThreadCreationMessage] = useState<Message | null>(null);
@@ -209,6 +212,8 @@ function App() {
           currentBranchId={branchId}
           onSwitchBranch={handleSwitchBranch}
           onOpenBranch={handleOpenBranch}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
         <div className={`flex-1 flex flex-col min-h-0 transition-all duration-300 ${openBranchId ? 'mr-[400px]' : ''}`}>
           <ChatWindow

@@ -69,6 +69,79 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
 
   // Check if message is being typed (empty or ends with cursor)
   const isTyping = !isUser && message.content === '';
+
+  // Pre-process markdown to fix inline list items (convert `: * Item` to proper list format)
+  const preprocessMarkdown = (text: string): string => {
+    // Pattern: Match numbered list items followed by inline asterisk items
+    // Example: "1. Item: * Sub-item 1 * Sub-item 2" 
+    // Should become: "1. Item:\n   * Sub-item 1\n   * Sub-item 2"
+    
+    // Split by lines to process each line individually
+    const lines = text.split('\n');
+    const processedLines: string[] = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Fix lines that are bold text labels but have a leading asterisk (like "* **Pros:**")
+      // Remove the leading asterisk so they render as bold text, not bullet points
+      const boldLabelWithBullet = line.match(/^\*\s+(\*\*[^*]+\*\*:\s*)$/);
+      if (boldLabelWithBullet) {
+        processedLines.push(boldLabelWithBullet[1]);
+        continue;
+      }
+      
+      // Skip lines that are just bold text labels (like "**Pros:**" or "**Cons:**")
+      // These should not be converted to lists
+      if (line.match(/^\*\*[^*]+\*\*:\s*$/)) {
+        processedLines.push(line);
+        continue;
+      }
+      
+      // Check if this line matches: "1. Text: * Item * Item * Item"
+      const numberedListMatch = line.match(/^(\d+\.\s+[^:]+:\s+)(\*\s+.+)$/);
+      if (numberedListMatch) {
+        const [, prefix, items] = numberedListMatch;
+        // Split items by ` * ` pattern
+        const itemParts = items.split(/\s+\*\s+/);
+        
+        // First line: the numbered list item
+        processedLines.push(prefix.trim());
+        
+        // Add each asterisk item as a nested list item
+        itemParts.forEach(item => {
+          if (item.trim()) {
+            processedLines.push('   * ' + item.trim());
+          }
+        });
+      } else {
+        // Check for regular text with inline asterisks: "Text: * Item * Item"
+        // But exclude lines that start with just bold text (like "**Pros:**")
+        const colonAsteriskMatch = line.match(/^([^:\n]+:\s+)(\*\s+.+)$/);
+        if (colonAsteriskMatch) {
+          const [, prefix, items] = colonAsteriskMatch;
+          // Don't process if the prefix is just bold text (like "**Pros:**")
+          if (!prefix.match(/^\*\*[^*]+\*\*:\s*$/)) {
+            const itemParts = items.split(/\s+\*\s+/);
+            
+            processedLines.push(prefix.trim());
+            itemParts.forEach(item => {
+              if (item.trim()) {
+                processedLines.push('   * ' + item.trim());
+              }
+            });
+          } else {
+            processedLines.push(line);
+          }
+        } else {
+          // No match, keep the line as is
+          processedLines.push(line);
+        }
+      }
+    }
+    
+    return processedLines.join('\n');
+  };
   
   return (
     <div ref={messageRef} className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 group`}>
@@ -143,7 +216,7 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
                   ),
                 }}
               >
-                {message.content}
+                {preprocessMarkdown(message.content)}
               </ReactMarkdown>
             </div>
           )}

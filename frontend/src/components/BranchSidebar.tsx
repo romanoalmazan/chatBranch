@@ -6,6 +6,8 @@ interface BranchSidebarProps {
   currentBranchId: string;
   onSwitchBranch: (branchId: string) => void;
   onOpenBranch?: (branchId: string) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export default function BranchSidebar({
@@ -13,6 +15,8 @@ export default function BranchSidebar({
   currentBranchId,
   onSwitchBranch,
   onOpenBranch,
+  isCollapsed = false,
+  onToggleCollapse,
 }: BranchSidebarProps) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,17 +73,73 @@ export default function BranchSidebar({
     return branch.id.length > 20 ? `${branch.id.substring(0, 20)}...` : branch.id;
   };
 
+  if (isCollapsed) {
+    return (
+      <aside className="w-12 bg-gray-100 border-r border-gray-300 flex flex-col items-center py-4 h-full flex-shrink-0">
+        <button
+          onClick={onToggleCollapse}
+          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors mb-4"
+          title="Expand sidebar"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <div className="flex-1 flex flex-col items-center gap-2">
+          {branches.slice(0, 5).map((branch) => {
+            const isActive = branch.id === currentBranchId;
+            return (
+              <button
+                key={branch.id}
+                onClick={() => {
+                  if (branch.id === 'main') {
+                    onSwitchBranch(branch.id);
+                  } else if (onOpenBranch) {
+                    onOpenBranch(branch.id);
+                  } else {
+                    onSwitchBranch(branch.id);
+                  }
+                }}
+                className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+                title={branch.id === 'main' ? 'Main Branch' : branch.id}
+              >
+                {branch.id === 'main' ? 'M' : branch.id.charAt(0).toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-64 bg-gray-100 border-r border-gray-300 p-4 hidden md:block overflow-y-auto h-full flex-shrink-0">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-700">Branches</h2>
-        <button
-          onClick={loadBranches}
-          className="text-xs text-blue-600 hover:text-blue-800"
-          title="Refresh branches"
-        >
-          ↻
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadBranches}
+            className="text-xs text-blue-600 hover:text-blue-800"
+            title="Refresh branches"
+          >
+            ↻
+          </button>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+              title="Collapse sidebar"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading && branches.length === 0 && (
