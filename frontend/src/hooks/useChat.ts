@@ -116,21 +116,19 @@ export function useChat(conversationId: string, branchId: string) {
   }, []);
 
   const handleCreateBranch = useCallback(
-    async (parentMessageId: string) => {
+    async (parentMessageId: string, threadName?: string) => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Create new branch
+        // Create new branch with optional thread name
+        const branchId = threadName ? `thread-${Date.now()}-${threadName.replace(/\s+/g, '-').toLowerCase()}` : undefined;
         const newBranch = await createBranch(
           conversationId,
           currentBranchId,
-          parentMessageId
+          parentMessageId,
+          branchId
         );
-
-        // Automatically switch to new branch
-        setCurrentBranchId(newBranch.id);
-        // Messages will be reloaded by the useEffect
 
         return newBranch;
       } catch (err) {
@@ -146,6 +144,27 @@ export function useChat(conversationId: string, branchId: string) {
     [conversationId, currentBranchId]
   );
 
+  // Function to load branch messages with full history
+  const loadBranchWithHistory = useCallback(
+    async (branchId: string) => {
+      try {
+        setIsLoadingHistory(true);
+        setError(null);
+        const loadedMessages = await loadConversation(conversationId, branchId);
+        return loadedMessages;
+      } catch (err) {
+        console.error('Failed to load branch messages:', err);
+        if (err instanceof Error && (err.message.includes('404') || err.message.includes('NOT_FOUND'))) {
+          return [];
+        }
+        throw err;
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    },
+    [conversationId]
+  );
+
   return {
     messages,
     isLoading,
@@ -155,6 +174,7 @@ export function useChat(conversationId: string, branchId: string) {
     branchId: currentBranchId,
     switchBranch,
     createBranchFromMessage: handleCreateBranch,
+    loadBranchWithHistory,
   };
 }
 

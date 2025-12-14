@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getBranches, Branch } from '../api/chat';
 
 interface BranchSidebarProps {
   conversationId: string;
   currentBranchId: string;
   onSwitchBranch: (branchId: string) => void;
+  onOpenBranch?: (branchId: string) => void;
 }
 
 export default function BranchSidebar({
   conversationId,
   currentBranchId,
   onSwitchBranch,
+  onOpenBranch,
 }: BranchSidebarProps) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +22,8 @@ export default function BranchSidebar({
     if (conversationId) {
       loadBranches();
     }
-  }, [conversationId, currentBranchId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]); // Only reload when conversationId changes, not on every branch switch
 
   const loadBranches = async () => {
     try {
@@ -50,6 +53,19 @@ export default function BranchSidebar({
     if (branch.id === 'main') {
       return 'Main Branch';
     }
+    
+    // Extract thread name from branch ID
+    // Format: thread-{timestamp}-{name} or just the name if it doesn't match the pattern
+    const match = branch.id.match(/^thread-\d+-(.+)$/);
+    if (match) {
+      // Extract the name part and replace dashes with spaces, capitalize words
+      const name = match[1].replace(/-/g, ' ');
+      return name.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    }
+    
+    // If it doesn't match the pattern, return as is (truncated if too long)
     return branch.id.length > 20 ? `${branch.id.substring(0, 20)}...` : branch.id;
   };
 
@@ -88,7 +104,15 @@ export default function BranchSidebar({
           return (
             <button
               key={branch.id}
-              onClick={() => onSwitchBranch(branch.id)}
+              onClick={() => {
+                if (branch.id === 'main') {
+                  onSwitchBranch(branch.id);
+                } else if (onOpenBranch) {
+                  onOpenBranch(branch.id);
+                } else {
+                  onSwitchBranch(branch.id);
+                }
+              }}
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                 isActive
                   ? 'bg-blue-600 text-white'

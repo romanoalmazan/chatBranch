@@ -1,5 +1,5 @@
-import React from 'react';
 import { Message } from '../types/chat';
+import { Branch } from '../api/chat';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 
@@ -9,8 +9,10 @@ interface ChatWindowProps {
   isLoading: boolean;
   isLoadingHistory?: boolean;
   error: string | null;
-  onBranch?: (messageId: string) => void;
-  isCreatingBranch?: boolean;
+  onCreateThread?: (message: Message, position: { x: number; y: number }) => void;
+  messageThreadCounts?: Record<string, number>;
+  messageThreads?: Record<string, Branch[]>;
+  onOpenThread?: (messageId: string, branchId?: string) => void;
 }
 
 export default function ChatWindow({
@@ -19,11 +21,13 @@ export default function ChatWindow({
   isLoading,
   isLoadingHistory,
   error,
-  onBranch,
-  isCreatingBranch,
+  onCreateThread,
+  messageThreadCounts = {},
+  messageThreads = {},
+  onOpenThread,
 }: ChatWindowProps) {
   return (
-    <div className="flex flex-col h-full min-h-0 bg-gray-50">
+    <div className="flex flex-col h-full min-h-0 bg-gray-50 overflow-hidden">
       {/* Error banner */}
       {error && (
         <div className="bg-red-50 border-b border-red-200 text-red-700 p-3 flex-shrink-0">
@@ -39,11 +43,13 @@ export default function ChatWindow({
       )}
 
       {/* Messages area - scrollable */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div id="messages-container" className="flex-1 overflow-y-auto min-h-0 overflow-x-hidden">
         <MessageList
           messages={messages}
-          onBranch={onBranch}
-          isCreatingBranch={isCreatingBranch}
+          onCreateThread={onCreateThread}
+          messageThreadCounts={messageThreadCounts}
+          messageThreads={messageThreads}
+          onOpenThread={onOpenThread}
         />
       </div>
 
