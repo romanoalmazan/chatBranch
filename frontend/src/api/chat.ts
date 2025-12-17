@@ -24,6 +24,23 @@ export interface Branch {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 /**
+ * Get auth token from auth context
+ * This function will be called by API functions to get the current user's token
+ */
+let getAuthTokenFn: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenGetter(fn: () => Promise<string | null>) {
+  getAuthTokenFn = fn;
+}
+
+async function getAuthToken(): Promise<string | null> {
+  if (!getAuthTokenFn) {
+    return null;
+  }
+  return await getAuthTokenFn();
+}
+
+/**
  * Send a chat message to the backend API
  * Now only sends the current message - backend loads history from Firestore
  * 
@@ -37,6 +54,11 @@ export async function sendMessage(
   conversationId: string,
   branchId: string
 ): Promise<ChatResponse> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please sign in.');
+  }
+
   const requestBody: ChatRequest = {
     conversationId,
     branchId,
@@ -47,11 +69,19 @@ export async function sendMessage(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Unauthorized - please sign in again');
+    }
+    if (response.status === 404) {
+      // Conversation doesn't exist yet (new conversation) - return empty array
+      return [];
+    }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
@@ -66,11 +96,24 @@ export async function loadConversation(
   conversationId: string,
   branchId: string
 ): Promise<Message[]> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please sign in.');
+  }
+
   const response = await fetch(
-    `${API_BASE_URL}/api/conversations/${conversationId}/branches/${branchId}/messages`
+    `${API_BASE_URL}/api/conversations/${conversationId}/branches/${branchId}/messages`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Unauthorized - please sign in again');
+    }
     if (response.status === 404) {
       // Branch doesn't exist yet, return empty array
       return [];
@@ -99,10 +142,16 @@ export async function createBranch(
   parentMessageId: string,
   branchId?: string
 ): Promise<Branch> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please sign in.');
+  }
+
   const response = await fetch(`${API_BASE_URL}/api/branches`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
       conversationId,
@@ -113,6 +162,13 @@ export async function createBranch(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Unauthorized - please sign in again');
+    }
+    if (response.status === 404) {
+      // Conversation doesn't exist yet (new conversation) - return empty array
+      return [];
+    }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
@@ -130,11 +186,28 @@ export async function createBranch(
  * Get all branches for a conversation
  */
 export async function getBranches(conversationId: string): Promise<Branch[]> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error('Authentication required. Please sign in.');
+  }
+
   const response = await fetch(
-    `${API_BASE_URL}/api/conversations/${conversationId}/branches`
+    `${API_BASE_URL}/api/conversations/${conversationId}/branches`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Unauthorized - please sign in again');
+    }
+    if (response.status === 404) {
+      // Conversation doesn't exist yet (new conversation) - return empty array
+      return [];
+    }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }

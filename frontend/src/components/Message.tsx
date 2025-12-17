@@ -109,9 +109,13 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
         processedLines.push(prefix.trim());
         
         // Add each asterisk item as a nested list item
-        itemParts.forEach(item => {
+        itemParts.forEach((item, index) => {
           if (item.trim()) {
-            processedLines.push('   * ' + item.trim());
+            // Remove leading asterisk from first item if present (from the initial match)
+            const cleanedItem = index === 0 && item.trim().startsWith('*') 
+              ? item.trim().substring(1).trim() 
+              : item.trim();
+            processedLines.push('   * ' + cleanedItem);
           }
         });
       } else {
@@ -125,9 +129,13 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
             const itemParts = items.split(/\s+\*\s+/);
             
             processedLines.push(prefix.trim());
-            itemParts.forEach(item => {
+            itemParts.forEach((item, index) => {
               if (item.trim()) {
-                processedLines.push('   * ' + item.trim());
+                // Remove leading asterisk from first item if present (from the initial match)
+                const cleanedItem = index === 0 && item.trim().startsWith('*') 
+                  ? item.trim().substring(1).trim() 
+                  : item.trim();
+                processedLines.push('   * ' + cleanedItem);
               }
             });
           } else {

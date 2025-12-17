@@ -72,18 +72,23 @@ console.log(`[Firestore] GOOGLE_APPLICATION_CREDENTIALS env: ${process.env.GOOGL
 const firestore = new Firestore(firestoreOptions);
 
 // Collection references
-const conversationsRef = firestore.collection('conversations');
+export const conversationsRef = firestore.collection('conversations');
 
 /**
  * Get or create a conversation
  */
-export async function getOrCreateConversation(conversationId: string): Promise<Conversation> {
+export async function getOrCreateConversation(conversationId: string, userId: string): Promise<Conversation> {
   const conversationDoc = await conversationsRef.doc(conversationId).get();
   
   if (conversationDoc.exists) {
     const data = conversationDoc.data()!;
+    // Verify user owns this conversation
+    if (data.userId !== userId) {
+      throw new Error('Unauthorized: User does not own this conversation');
+    }
     return {
       id: conversationId,
+      userId: data.userId,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
     };
@@ -91,6 +96,7 @@ export async function getOrCreateConversation(conversationId: string): Promise<C
     // Create new conversation
     const now = new Date();
     const conversation: Omit<Conversation, 'id'> = {
+      userId,
       createdAt: now,
       updatedAt: now,
     };
@@ -105,6 +111,60 @@ export async function getOrCreateConversation(conversationId: string): Promise<C
       id: conversationId,
       ...conversation,
     };
+  }
+}
+
+/**
+ * Get all conversations for a user
+ */
+export async function getUserConversations(userId: string): Promise<Conversation[]> {
+  try {
+    console.log(`[Firestore] Loading conversations for user: ${userId}`);
+    // Query without orderBy to avoid requiring a composite index
+    // We'll sort in memory instead
+    const snapshot = await conversationsRef
+      .where('userId', '==', userId)
+      .get();
+    
+    console.log(`[Firestore] Loaded ${snapshot.docs.length} conversations`);
+    
+    // Map and sort by updatedAt descending
+    const conversations = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        createdAt: data.createdAt.toDate(),
+        updatedAt: data.updatedAt.toDate(),
+      };
+    });
+    
+    // Sort by updatedAt descending (most recent first)
+    conversations.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    
+    return conversations;
+  } catch (error) {
+    console.error(`[Firestore] Error loading user conversations:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Verify that a user owns a conversation
+ */
+export async function verifyConversationOwnership(conversationId: string, userId: string): Promise<boolean> {
+  try {
+    const conversationDoc = await conversationsRef.doc(conversationId).get();
+    
+    if (!conversationDoc.exists) {
+      return false;
+    }
+    
+    const data = conversationDoc.data()!;
+    return data.userId === userId;
+  } catch (error) {
+    console.error(`[Firestore] Error verifying conversation ownership:`, error);
+    return false;
   }
 }
 
@@ -327,6 +387,7 @@ export async function getConversationBranches(conversationId: string): Promise<B
 
 /**
  * Create a new branch from an existing message
+ * Note: Ownership is verified by the caller before calling this function
  */
 export async function createBranchFromMessage(
   conversationId: string,
@@ -345,7 +406,7 @@ export async function createBranchFromMessage(
   }
   
   // Create new branch
-  const branchId = newBranchId || `branch-${Date.now()}`;
+  const branchId = newBranchId || `thread-${Date.now()}-${parentMessageId.substring(0, 8)}`;
   const branch = await getOrCreateBranch(
     conversationId,
     branchId,

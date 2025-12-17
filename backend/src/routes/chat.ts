@@ -31,12 +31,20 @@ export async function chatHandler(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // Get userId from authenticated request
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const userId = req.user.userId;
+
     // Generate conversationId if not provided
     const conversationId = requestBody.conversationId || uuidv4();
     const branchId = requestBody.branchId || 'main';
 
-    // Get or create conversation and branch
-    await getOrCreateConversation(conversationId);
+    // Get or create conversation and branch (with userId)
+    await getOrCreateConversation(conversationId, userId);
     await getOrCreateBranch(conversationId, branchId);
 
     // Load conversation history from Firestore

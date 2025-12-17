@@ -21,15 +21,24 @@ export function useChat(conversationId: string, branchId: string) {
         })
         .catch((err) => {
           console.error('Failed to load conversation:', err);
-          // If it's a 404 or NOT_FOUND, that's fine - just means no messages yet
+          // If it's a 404 or NOT_FOUND, that's fine - just means no messages yet (new conversation)
           if (err instanceof Error && (err.message.includes('404') || err.message.includes('NOT_FOUND'))) {
             setMessages([]);
+            setIsLoadingHistory(false);
+          } else if (err instanceof Error && err.message.includes('Authentication required')) {
+            // Auth token not ready yet - don't show error, just wait
+            console.log('[useChat] Auth token not ready yet, will retry when available');
+            setMessages([]);
+            setIsLoadingHistory(false);
           } else {
-            // Only set error for real errors, not "not found"
+            // Only set error for real errors, not "not found" or auth issues
             setError(err instanceof Error ? err.message : 'Failed to load conversation');
+            setIsLoadingHistory(false);
           }
-          setIsLoadingHistory(false);
         });
+    } else {
+      // Clear messages if no conversation ID
+      setMessages([]);
     }
   }, [conversationId, currentBranchId]);
 

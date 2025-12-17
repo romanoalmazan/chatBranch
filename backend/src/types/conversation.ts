@@ -12,9 +12,10 @@ import { Message, MessageRole } from './chat';
 
 export interface Conversation {
   id: string;
+  userId: string; // User who owns this conversation
   createdAt: Date;
   updatedAt: Date;
-  // TODO: Add user ID, metadata, etc. when implementing Firestore
+  // TODO: Add metadata, title, etc. when implementing Firestore
 }
 
 export interface Branch {
@@ -34,5 +35,6 @@ export interface StoredMessage extends Message {
   timestamp: Date;
   // TODO: Add metadata like token counts, model version, etc. when implementing Firestore
 }
+
 
 
