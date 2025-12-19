@@ -53,26 +53,27 @@ export default function BranchPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-gray-200 w-[400px] flex-shrink-0 shadow-lg">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 w-[450px] flex-shrink-0 shadow-2xl transition-all duration-300 z-30">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900 truncate">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🌱</span>
+            <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
               {getBranchDisplayName()}
             </h2>
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium uppercase tracking-wider">
             Started {formatDate(branch.createdAt)}
           </div>
         </div>
         <button
           onClick={onClose}
-          className="flex-shrink-0 ml-2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
+          className="flex-shrink-0 ml-4 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
           title="Close thread"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>

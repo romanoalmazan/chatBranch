@@ -70,159 +70,61 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
   // Check if message is being typed (empty or ends with cursor)
   const isTyping = !isUser && message.content === '';
 
-  // Pre-process markdown to fix inline list items (convert `: * Item` to proper list format)
+  // Pre-process markdown to fix common AI formatting issues
   const preprocessMarkdown = (text: string): string => {
-    // Pattern: Match numbered list items followed by inline asterisk items
-    // Example: "1. Item: * Sub-item 1 * Sub-item 2" 
-    // Should become: "1. Item:\n   * Sub-item 1\n   * Sub-item 2"
+    if (!text) return '';
     
-    // Split by lines to process each line individually
-    const lines = text.split('\n');
-    const processedLines: string[] = [];
+    // Fix case where AI puts a colon then immediately a list on the same line
+    // e.g., "Step 1: * item" -> "Step 1:\n* item"
+    let processed = text.replace(/([:?!])\s+(\*|\d+\.)/g, '$1\n$2');
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Fix lines that are bold text labels but have a leading asterisk (like "* **Pros:**")
-      // Remove the leading asterisk so they render as bold text, not bullet points
-      const boldLabelWithBullet = line.match(/^\*\s+(\*\*[^*]+\*\*:\s*)$/);
-      if (boldLabelWithBullet) {
-        processedLines.push(boldLabelWithBullet[1]);
-        continue;
-      }
-      
-      // Skip lines that are just bold text labels (like "**Pros:**" or "**Cons:**")
-      // These should not be converted to lists
-      if (line.match(/^\*\*[^*]+\*\*:\s*$/)) {
-        processedLines.push(line);
-        continue;
-      }
-      
-      // Check if this line matches: "1. Text: * Item * Item * Item"
-      const numberedListMatch = line.match(/^(\d+\.\s+[^:]+:\s+)(\*\s+.+)$/);
-      if (numberedListMatch) {
-        const [, prefix, items] = numberedListMatch;
-        // Split items by ` * ` pattern
-        const itemParts = items.split(/\s+\*\s+/);
-        
-        // First line: the numbered list item
-        processedLines.push(prefix.trim());
-        
-        // Add each asterisk item as a nested list item
-        itemParts.forEach((item, index) => {
-          if (item.trim()) {
-            // Remove leading asterisk from first item if present (from the initial match)
-            const cleanedItem = index === 0 && item.trim().startsWith('*') 
-              ? item.trim().substring(1).trim() 
-              : item.trim();
-            processedLines.push('   * ' + cleanedItem);
-          }
-        });
-      } else {
-        // Check for regular text with inline asterisks: "Text: * Item * Item"
-        // But exclude lines that start with just bold text (like "**Pros:**")
-        const colonAsteriskMatch = line.match(/^([^:\n]+:\s+)(\*\s+.+)$/);
-        if (colonAsteriskMatch) {
-          const [, prefix, items] = colonAsteriskMatch;
-          // Don't process if the prefix is just bold text (like "**Pros:**")
-          if (!prefix.match(/^\*\*[^*]+\*\*:\s*$/)) {
-            const itemParts = items.split(/\s+\*\s+/);
-            
-            processedLines.push(prefix.trim());
-            itemParts.forEach((item, index) => {
-              if (item.trim()) {
-                // Remove leading asterisk from first item if present (from the initial match)
-                const cleanedItem = index === 0 && item.trim().startsWith('*') 
-                  ? item.trim().substring(1).trim() 
-                  : item.trim();
-                processedLines.push('   * ' + cleanedItem);
-              }
-            });
-          } else {
-            processedLines.push(line);
-          }
-        } else {
-          // No match, keep the line as is
-          processedLines.push(line);
-        }
-      }
-    }
+    // Fix case where AI leaves an empty numbered list item before a heading/title
+    // e.g., "1.\n\nCheck Your Passport" -> "1. **Check Your Passport**"
+    processed = processed.replace(/^(\d+\.)\s*\n+\s*([^#\n*]+)/gm, '$1 **$2**');
     
-    return processedLines.join('\n');
+    return processed;
   };
   
   return (
-    <div ref={messageRef} className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 group`}>
-      <div className={`flex items-start gap-3 max-w-3xl ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div ref={messageRef} className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-8 group animate-fade-in`}>
+      <div className={`flex items-start gap-4 w-full ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Avatar placeholder */}
-        {!isUser && (
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-            AI
-          </div>
-        )}
+        <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md transition-transform group-hover:scale-105 ${
+          isUser 
+            ? 'bg-blue-600 shadow-blue-500/20' 
+            : 'bg-gradient-to-br from-purple-500 to-blue-600 shadow-purple-500/20'
+        }`}>
+          {isUser ? 'R' : 'AI'}
+        </div>
         
-        <div className={`flex-1 ${isUser ? 'flex justify-end' : ''}`}>
+        <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
           <div
-            className={`rounded-2xl px-4 py-3 shadow-sm transition-all ${
+            className={`transition-all duration-200 ${
               isUser
-                ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white ml-auto max-w-[85%]'
-                : 'bg-white border border-gray-200 text-gray-900 max-w-full'
+                ? 'bg-blue-600 text-white rounded-2xl px-5 py-3 shadow-md max-w-[85%]'
+                : 'bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 text-gray-900 dark:text-gray-100 rounded-2xl px-6 py-4 shadow-sm w-full'
             }`}
           >
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{message.content}</p>
           ) : isTyping ? (
-            <div className="flex items-center gap-1 text-gray-400">
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+            <div className="flex items-center gap-1.5 py-2">
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+              <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
             </div>
           ) : (
-            <div className="prose prose-sm max-w-none break-words leading-relaxed [&_.katex]:text-base [&_.katex-display]:my-4">
+            <div className="prose prose-base dark:prose-invert max-w-none break-words leading-relaxed 
+              prose-p:mb-4 prose-p:last:mb-0 
+              prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+              prose-li:my-1 prose-ul:my-4 prose-ol:my-4
+              prose-strong:text-blue-600 dark:prose-strong:text-blue-400
+              prose-code:bg-gray-100 dark:prose-code:bg-gray-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
+              prose-pre:bg-gray-900 dark:prose-pre:bg-black prose-pre:border prose-pre:border-gray-800 prose-pre:p-4 prose-pre:rounded-xl
+              [&_.katex]:text-[1.1em] [&_.katex-display]:my-6">
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
-                components={{
-                  // Style markdown elements
-                  p: ({ children }) => <p className="mb-2 last:mb-0 [&_.katex]:inline-block">{children}</p>,
-                  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                  em: ({ children }) => <em className="italic">{children}</em>,
-                  code: ({ inline, children, className, ...props }: any) => {
-                    if (inline) {
-                      return (
-                        <code className="bg-gray-300 px-1 py-0.5 rounded text-sm font-mono" {...props}>
-                          {children}
-                        </code>
-                      );
-                    }
-                    return (
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    );
-                  },
-                  pre: ({ children }: any) => {
-                    return (
-                      <pre className="bg-gray-300 p-3 rounded text-sm font-mono overflow-x-auto mb-2 whitespace-pre-wrap">
-                        {children}
-                      </pre>
-                    );
-                  },
-                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                  li: ({ children }) => <li className="ml-2">{children}</li>,
-                  h1: ({ children }) => <h1 className="text-xl font-bold mb-2 mt-2">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-2">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-2">{children}</h3>,
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-gray-400 pl-4 italic my-2">{children}</blockquote>
-                  ),
-                  a: ({ href, children }) => (
-                    <a href={href} className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">
-                      {children}
-                    </a>
-                  ),
-                }}
               >
                 {preprocessMarkdown(message.content)}
               </ReactMarkdown>
@@ -230,60 +132,54 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
           )}
           </div>
           
-          {/* Thread button and indicator - Discord style */}
+          {/* Thread button and indicator */}
           {!isUser && (
-            <div className="flex items-center gap-2 mt-2 relative">
+            <div className="flex items-center gap-3 mt-3 px-2">
               {threadCount > 0 && onOpenThread && (
                 <div className="relative" ref={menuRef}>
                   {threadCount === 1 && threads.length === 1 ? (
-                    // Single thread - open directly
                     <button
                       onClick={() => onOpenThread(message.id, threads[0].id)}
-                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1.5 px-2 py-1 rounded hover:bg-blue-50 transition-all"
-                      title="Open thread"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold flex items-center gap-1.5 py-1 px-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 transition-all border border-blue-100 dark:border-blue-800/50"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <span className="font-medium">1 thread</span>
+                      1 Thread
                     </button>
                   ) : (
-                    // Multiple threads - show dropdown
                     <>
                       <button
                         onClick={() => setShowThreadMenu(!showThreadMenu)}
-                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1.5 px-2 py-1 rounded hover:bg-blue-50 transition-all"
-                        title={`${threadCount} threads - Click to view`}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold flex items-center gap-1.5 py-1 px-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 transition-all border border-blue-100 dark:border-blue-800/50"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <span className="font-medium">{threadCount} threads</span>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        {threadCount} Threads
+                        <svg className={`w-3 h-3 transition-transform ${showThreadMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
                       {showThreadMenu && (
-                        <div className="absolute left-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
-                          <div className="py-1">
-                            {threads.map((thread) => (
-                              <button
-                                key={thread.id}
-                                onClick={() => {
-                                  onOpenThread(message.id, thread.id);
-                                  setShowThreadMenu(false);
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                <div className="font-medium truncate">
-                                  {getThreadDisplayName(thread.id)}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-0.5">
-                                  {new Date(thread.createdAt).toLocaleDateString()}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
+                        <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 min-w-[220px] py-2 animate-fade-in">
+                          {threads.map((thread) => (
+                            <button
+                              key={thread.id}
+                              onClick={() => {
+                                onOpenThread(message.id, thread.id);
+                                setShowThreadMenu(false);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                            >
+                              <div className="text-sm font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                                {getThreadDisplayName(thread.id)}
+                              </div>
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 uppercase tracking-wider font-medium">
+                                {new Date(thread.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       )}
                     </>
@@ -294,13 +190,12 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
                 <button
                   onClick={handleCreateThread}
                   disabled={isCreatingBranch}
-                  className={`text-xs text-gray-500 hover:text-blue-600 transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 ${threadCount > 0 ? '' : 'opacity-0 group-hover:opacity-100'}`}
-                  title="Create a thread from this message"
+                  className={`text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all ${threadCount > 0 ? '' : 'opacity-0 group-hover:opacity-100'}`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  {isCreatingBranch ? 'Creating thread...' : 'Create thread'}
+                  {isCreatingBranch ? 'Branching...' : 'Branch Out'}
                 </button>
               )}
             </div>
@@ -310,4 +205,3 @@ export default function Message({ message, onCreateThread, isCreatingBranch = fa
     </div>
   );
 }
-

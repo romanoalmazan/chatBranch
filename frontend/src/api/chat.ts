@@ -79,8 +79,10 @@ export async function sendMessage(
       throw new Error('Unauthorized - please sign in again');
     }
     if (response.status === 404) {
-      // Conversation doesn't exist yet (new conversation) - return empty array
-      return [];
+      // For chat/branch endpoints that might return 404 for new items
+      // we'll let the specific functions handle it or return a safe default
+      const errorData = await response.json().catch(() => ({ error: 'Not found' }));
+      throw new Error(errorData.error || 'Resource not found');
     }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -166,8 +168,10 @@ export async function createBranch(
       throw new Error('Unauthorized - please sign in again');
     }
     if (response.status === 404) {
-      // Conversation doesn't exist yet (new conversation) - return empty array
-      return [];
+      // For chat/branch endpoints that might return 404 for new items
+      // we'll let the specific functions handle it or return a safe default
+      const errorData = await response.json().catch(() => ({ error: 'Not found' }));
+      throw new Error(errorData.error || 'Resource not found');
     }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -205,8 +209,10 @@ export async function getBranches(conversationId: string): Promise<Branch[]> {
       throw new Error('Unauthorized - please sign in again');
     }
     if (response.status === 404) {
-      // Conversation doesn't exist yet (new conversation) - return empty array
-      return [];
+      // For chat/branch endpoints that might return 404 for new items
+      // we'll let the specific functions handle it or return a safe default
+      const errorData = await response.json().catch(() => ({ error: 'Not found' }));
+      throw new Error(errorData.error || 'Resource not found');
     }
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);

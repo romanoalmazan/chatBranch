@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ChatWindow from './components/ChatWindow';
 import BranchSidebar from './components/BranchSidebar';
 import BranchPanel from './components/BranchPanel';
 import ThreadCreationModal from './components/ThreadCreationModal';
 import AuthModal from './components/AuthModal';
+import LandingPage from './components/LandingPage';
 import ConversationList from './components/ConversationList';
 import { useChat } from './hooks/useChat';
 import { getBranches, Branch, setAuthTokenGetter } from './api/chat';
@@ -260,8 +262,7 @@ function AppContent() {
     }
   }, [user, authToken, conversationId]);
 
-  // Show auth modal if not authenticated
-  // All hooks must be called before conditional returns
+  // Show loading state while auth is initializing
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -270,8 +271,9 @@ function AppContent() {
     );
   }
 
+  // If not logged in, show the LandingPage
   if (!user) {
-    return <AuthModal />;
+    return <LandingPage />;
   }
 
   // Show loading state while waiting for auth token
@@ -356,9 +358,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

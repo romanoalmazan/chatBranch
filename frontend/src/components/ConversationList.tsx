@@ -101,10 +101,10 @@ export default function ConversationList({
 
   if (isCollapsed) {
     return (
-      <aside className="w-12 bg-gray-50 border-r border-gray-300 flex flex-col items-center py-4 h-full flex-shrink-0">
+      <aside className="w-12 bg-gray-50 dark:bg-gray-950 border-r border-gray-300 dark:border-gray-800 flex flex-col items-center py-4 h-full flex-shrink-0 transition-colors duration-300">
         <button
           onClick={onToggleCollapse}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors mb-4"
+          className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors mb-4"
           title="Expand sidebar"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,8 +129,8 @@ export default function ConversationList({
                 onClick={() => onSelectConversation(conv.id)}
                 className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800'
                 }`}
                 title={formatDate(conv.updatedAt)}
               >
@@ -144,13 +144,13 @@ export default function ConversationList({
   }
 
   return (
-    <aside className="w-64 bg-gray-50 border-r border-gray-300 p-4 overflow-y-auto h-full flex-shrink-0">
+    <aside className="w-64 bg-gray-50 dark:bg-gray-950 border-r border-gray-300 dark:border-gray-800 p-4 overflow-y-auto h-full flex-shrink-0 transition-colors duration-300">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-700">Conversations</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Conversations</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={onNewConversation}
-            className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow-sm"
             title="New conversation"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,7 +159,7 @@ export default function ConversationList({
           </button>
           <button
             onClick={loadConversations}
-            className="text-xs text-blue-600 hover:text-blue-800"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
             title="Refresh conversations"
             disabled={!authToken}
           >
@@ -168,7 +168,7 @@ export default function ConversationList({
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+              className="p-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
               title="Collapse sidebar"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,16 +180,16 @@ export default function ConversationList({
       </div>
 
       {isLoading && conversations.length === 0 && (
-        <div className="text-sm text-gray-500">Loading conversations...</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
       )}
 
       {error && (
-        <div className="text-xs text-red-600 mb-2">{error}</div>
+        <div className="text-xs text-red-600 dark:text-red-400 mb-2">{error}</div>
       )}
 
       {conversations.length === 0 && !isLoading && (
-        <div className="text-sm text-gray-500 mb-4">
-          No conversations yet. Start a new chat!
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          No conversations yet.
         </div>
       )}
 
@@ -201,18 +201,19 @@ export default function ConversationList({
             <button
               key={conv.id}
               onClick={() => onSelectConversation(conv.id)}
-              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all ${
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-200'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-900'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">
-                    💬 Conversation
+                  <div className="font-medium truncate flex items-center gap-2">
+                    <span className="text-lg">💬</span>
+                    <span className="truncate">Conversation</span>
                   </div>
-                  <div className={`text-xs mt-1 ${isActive ? 'text-blue-100' : 'text-gray-400'}`}>
+                  <div className={`text-[10px] mt-1 ${isActive ? 'text-blue-100' : 'text-gray-400'}`}>
                     {formatDate(conv.updatedAt)}
                   </div>
                 </div>

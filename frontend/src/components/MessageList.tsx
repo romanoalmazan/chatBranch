@@ -39,26 +39,12 @@ export default function MessageList({ messages, onCreateThread, messageThreadCou
   }, [messages.length]);
 
   if (messages.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 px-4">
-        <div className="text-center max-w-lg">
-          <div className="mb-6">
-            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-2xl shadow-lg mb-4">
-              AI
-            </div>
-          </div>
-          <h2 className="text-3xl font-light text-gray-700 mb-3">How can I help you today?</h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Start a conversation or create branches from any response to explore different paths.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="flex-1">
-      <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="flex-1 w-full overflow-x-hidden">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-2">
         {messages.map((message) => (
           <MessageComponent
             key={message.id}
@@ -69,10 +55,8 @@ export default function MessageList({ messages, onCreateThread, messageThreadCou
             onOpenThread={onOpenThread}
           />
         ))}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
     </div>
   );
 }
-
-
