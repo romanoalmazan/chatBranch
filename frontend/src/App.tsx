@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -57,6 +57,9 @@ function AppContent() {
   // Branch panel state
   const [openBranchId, setOpenBranchId] = useState<string | null>(null);
   const [openBranch, setOpenBranch] = useState<Branch | null>(null);
+  const [branchPanelWidth, setBranchPanelWidth] = useState<number>(450);
+  const [isResizing, setIsResizing] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -190,6 +193,43 @@ function AppContent() {
     setOpenBranch(null);
   }, []);
 
+  // Handle resizing the branch panel
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !chatContainerRef.current) return;
+      
+      const containerRect = chatContainerRef.current.getBoundingClientRect();
+      const newWidth = containerRect.right - e.clientX;
+      // Constrain width between 300px and 60% of container width
+      const minWidth = 300;
+      const maxWidth = containerRect.width * 0.6;
+      setBranchPanelWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
+
   const handleRequestThreadCreation = useCallback(
     (message: Message, position: { x: number; y: number }) => {
       console.log('Opening thread creation modal for message:', message.id, 'at position:', position);
@@ -310,36 +350,56 @@ function AppContent() {
           />
         )}
         
-        <div className={`flex-1 flex flex-col min-h-0 transition-all duration-300 ${openBranchId ? 'mr-[400px]' : ''}`}>
-          {conversationId ? (
-            <ChatWindow
-              messages={messages}
-              onSendMessage={sendMessage}
-              isLoading={isLoading}
-              isLoadingHistory={isLoadingHistory}
-              error={error}
-              onCreateThread={handleRequestThreadCreation}
-              messageThreadCounts={messageThreadCounts}
-              messageThreads={messageThreads}
-              onOpenThread={handleOpenThread}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Select a conversation or create a new one
+        <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden" ref={chatContainerRef}>
+          <div className="flex-1 flex min-h-0 relative">
+            {/* Main Chat Window */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
+              {conversationId ? (
+                <ChatWindow
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  isLoading={isLoading}
+                  isLoadingHistory={isLoadingHistory}
+                  error={error}
+                  onCreateThread={handleRequestThreadCreation}
+                  messageThreadCounts={messageThreadCounts}
+                  messageThreads={messageThreads}
+                  onOpenThread={handleOpenThread}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Select a conversation or create a new one
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        
-        {/* Branch Panel - Fixed on right side */}
-        {openBranchId && openBranch && conversationId && (
-          <div className="fixed right-0 top-0 bottom-0 z-40 branch-panel-enter" style={{ width: '400px', height: '100vh' }}>
-            <BranchPanel
-              conversationId={conversationId}
-              branch={openBranch}
-              onClose={handleCloseBranchPanel}
-            />
+            
+            {/* Resizable Divider */}
+            {openBranchId && openBranch && conversationId && (
+              <div
+                className={`flex-shrink-0 w-1 bg-gray-200 dark:bg-gray-800 hover:bg-blue-500 dark:hover:bg-blue-600 cursor-col-resize transition-colors z-50 ${
+                  isResizing ? 'bg-blue-500 dark:bg-blue-600' : ''
+                }`}
+                onMouseDown={handleMouseDown}
+              >
+                <div className="w-full h-full" />
+              </div>
+            )}
+            
+            {/* Branch Panel */}
+            {openBranchId && openBranch && conversationId && (
+              <div
+                className="flex-shrink-0 flex flex-col min-h-0 h-full relative"
+                style={{ width: `${branchPanelWidth}px` }}
+              >
+                <BranchPanel
+                  conversationId={conversationId}
+                  branch={openBranch}
+                  onClose={handleCloseBranchPanel}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Thread Creation Modal */}
         {threadCreationMessage && threadCreationPosition && (

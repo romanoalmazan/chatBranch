@@ -53,9 +53,9 @@ export default function BranchPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 w-[450px] flex-shrink-0 shadow-2xl transition-all duration-300 z-30">
+    <div className="flex flex-col h-full w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex-shrink-0 shadow-2xl transition-all duration-300 z-30 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10 flex-shrink-0">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">🌱</span>
