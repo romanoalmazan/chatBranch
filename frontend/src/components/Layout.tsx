@@ -31,11 +31,13 @@ export default function Layout({ children, onNewChat }: LayoutProps) {
         {/* Header */}
         <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between flex-shrink-0 transition-all duration-300 sticky top-0 z-50">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20 group-hover:rotate-6 transition-transform">
-              B
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BranchAI Logo" 
+              className="w-9 h-9 rounded-xl shadow-lg shadow-blue-500/20 group-hover:rotate-6 transition-transform object-contain"
+            />
             <div>
-              <span className="text-xl font-black text-gray-900 dark:text-gray-100 tracking-tighter">BranchMind</span>
+              <span className="text-xl font-black text-gray-900 dark:text-gray-100 tracking-tighter">BranchAI</span>
               <span className="ml-2 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded uppercase tracking-widest border border-blue-100 dark:border-blue-800">MVP</span>
             </div>
           </div>

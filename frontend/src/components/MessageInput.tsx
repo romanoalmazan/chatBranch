@@ -34,7 +34,7 @@ export default function MessageInput({ onSend, disabled, variant = 'default' }: 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isCentered ? "What's on your mind?" : "Ask BranchMind anything..."}
+            placeholder={isCentered ? "What's on your mind?" : "Ask BranchAI anything..."}
             className={`w-full px-5 py-4 pr-14 border border-gray-200 dark:border-gray-700 rounded-[28px] focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:border-transparent resize-none bg-gray-50 dark:bg-gray-800 dark:text-gray-100 transition-all hover:bg-white dark:hover:bg-gray-700/50 ${isCentered ? 'shadow-md' : 'shadow-sm'}`}
             rows={1}
             disabled={disabled}

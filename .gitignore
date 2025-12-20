@@ -4,10 +4,16 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Environment variables
+# Environment variables (exclude all .env files except .env.example)
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.test
+**/.env
+**/.env.*
+!**/.env.example
 
 # Service account keys (NEVER commit these!)
 *service-account*.json
