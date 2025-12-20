@@ -3,7 +3,7 @@ import cors from 'cors';
 import { healthCheck } from './routes/health';
 import { chatHandler } from './routes/chat';
 import { createBranchHandler, getBranchesHandler, getBranchMessagesHandler } from './routes/branches';
-import { getConversationsHandler, createConversationHandler } from './routes/conversations';
+import { getConversationsHandler, createConversationHandler, deleteConversationHandler } from './routes/conversations';
 import { authenticateToken } from './middleware/auth';
 import { initializeFirebaseAdmin } from './services/firebase-admin';
 
@@ -26,6 +26,7 @@ export function createApp(): Express {
   // Protected routes (authentication required)
   app.get('/api/conversations', authenticateToken, getConversationsHandler);
   app.post('/api/conversations', authenticateToken, createConversationHandler);
+  app.delete('/api/conversations/:conversationId', authenticateToken, deleteConversationHandler);
   app.post('/api/chat', authenticateToken, chatHandler);
   app.post('/api/branches', authenticateToken, createBranchHandler);
   app.get('/api/conversations/:conversationId/branches', authenticateToken, getBranchesHandler);

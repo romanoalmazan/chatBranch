@@ -13,9 +13,9 @@ import { Message, MessageRole } from './chat';
 export interface Conversation {
   id: string;
   userId: string; // User who owns this conversation
+  title?: string; // Auto-generated title from first message
   createdAt: Date;
   updatedAt: Date;
-  // TODO: Add metadata, title, etc. when implementing Firestore
 }
 
 export interface Branch {

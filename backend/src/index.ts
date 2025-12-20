@@ -7,11 +7,14 @@ import { config } from './config';
 function main() {
   const app = createApp();
 
-  const port = config.server.port;
+  // Cloud Run sets PORT env var, fallback to config
+  // Parse PORT as integer since process.env.PORT is a string
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : config.server.port;
 
-  app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-    console.log(`Health check: http://localhost:${port}/health`);
+  // Listen on 0.0.0.0 to accept connections from Cloud Run
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`Health check: http://0.0.0.0:${port}/health`);
   });
 }
 

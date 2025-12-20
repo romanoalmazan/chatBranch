@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getUserConversations, verifyConversationOwnership } from '../services/firestore';
+import { getUserConversations, verifyConversationOwnership, deleteConversation } from '../services/firestore';
 
 /**
  * Get all conversations for the authenticated user
@@ -49,6 +49,49 @@ export async function createConversationHandler(req: Request, res: Response): Pr
     });
   } catch (error) {
     console.error('Error creating conversation:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+/**
+ * Delete a conversation
+ * DELETE /api/conversations/:conversationId
+ */
+export async function deleteConversationHandler(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const userId = req.user.userId;
+    const conversationId = req.params.conversationId;
+
+    if (!conversationId) {
+      res.status(400).json({ error: 'Conversation ID is required' });
+      return;
+    }
+
+    await deleteConversation(conversationId, userId);
+    
+    res.json({ 
+      success: true,
+      message: 'Conversation deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting conversation:', error);
+    
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: error.message,
+      });
+      return;
+    }
+    
     res.status(500).json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error',

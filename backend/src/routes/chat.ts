@@ -56,8 +56,11 @@ export async function chatHandler(req: Request, res: Response): Promise<void> {
     // Combine history with current message
     const allMessages: Message[] = [...historyMessages, currentUserMessage];
 
+    // Check if this is the first message in the conversation (for title generation)
+    const isFirstMessage = historyMessages.length === 0 && branchId === 'main';
+    
     // Save user message to Firestore
-    const savedUserMessage = await saveMessage(conversationId, branchId, currentUserMessage);
+    const savedUserMessage = await saveMessage(conversationId, branchId, currentUserMessage, isFirstMessage);
 
     // TODO: Record custom metric: conversationId, branchId
     // TODO: Log structured event: chat request received

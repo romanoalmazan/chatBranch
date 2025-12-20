@@ -7,7 +7,6 @@ import ChatWindow from './components/ChatWindow';
 import BranchSidebar from './components/BranchSidebar';
 import BranchPanel from './components/BranchPanel';
 import ThreadCreationModal from './components/ThreadCreationModal';
-import AuthModal from './components/AuthModal';
 import LandingPage from './components/LandingPage';
 import ConversationList from './components/ConversationList';
 import { useChat } from './hooks/useChat';
@@ -61,9 +60,9 @@ function AppContent() {
   const [isResizing, setIsResizing] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  // Sidebar collapse state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isConversationListCollapsed, setIsConversationListCollapsed] = useState(false);
+  // Sidebar collapse state - both collapsed by default
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isConversationListCollapsed, setIsConversationListCollapsed] = useState(true);
 
   // Thread creation modal state
   const [threadCreationMessage, setThreadCreationMessage] = useState<Message | null>(null);
@@ -175,6 +174,8 @@ function AppContent() {
       }
       
       // Otherwise, find the first branch that was created from this message
+      if (!conversationId) return; // Add null check
+      
       try {
         const branches = await getBranches(conversationId);
         const branch = branches.find((b) => b.parentMessageId === messageId);
@@ -289,6 +290,17 @@ function AppContent() {
     setOpenBranch(null);
   }, []);
 
+  const handleDeleteConversation = useCallback((deletedConversationId: string) => {
+    // If the deleted conversation is the current one, create a new conversation
+    if (deletedConversationId === conversationId) {
+      const newConversationId = uuidv4();
+      setConversationId(newConversationId);
+      setBranchId('main');
+      setOpenBranchId(null);
+      setOpenBranch(null);
+    }
+  }, [conversationId]);
+
   // Create new conversation if none selected (only after auth token is ready)
   // MUST be before any conditional returns to follow Rules of Hooks
   useEffect(() => {
@@ -333,6 +345,7 @@ function AppContent() {
           currentConversationId={conversationId}
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewChat}
+          onDeleteConversation={handleDeleteConversation}
           authToken={authToken}
           isCollapsed={isConversationListCollapsed}
           onToggleCollapse={() => setIsConversationListCollapsed(!isConversationListCollapsed)}

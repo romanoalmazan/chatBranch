@@ -74,3 +74,44 @@ export async function callGemini(messages: Message[]): Promise<GeminiResponse> {
   }
 }
 
+/**
+ * Generate a short title for a conversation based on the first user message
+ */
+export async function generateConversationTitle(firstMessage: string): Promise<string> {
+  try {
+    console.log(`[Gemini] Generating title for conversation from message: ${firstMessage.substring(0, 50)}...`);
+    
+    const vertexAI = new VertexAI({
+      project: config.gcp.projectId,
+      location: config.gcp.location,
+    });
+
+    const model = vertexAI.getGenerativeModel({
+      model: config.gcp.modelName,
+    });
+
+    const prompt = `Generate a short, descriptive title (maximum 6 words) for a conversation that starts with this message: "${firstMessage}"
+
+Return only the title, nothing else. Make it concise and descriptive.`;
+
+    const result = await model.generateContent(prompt);
+    const title = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'New Conversation';
+
+    // Clean up the title - remove quotes if present, limit length
+    let cleanTitle = title.replace(/^["']|["']$/g, '').trim();
+    if (cleanTitle.length > 60) {
+      cleanTitle = cleanTitle.substring(0, 57) + '...';
+    }
+
+    console.log(`[Gemini] Generated title: ${cleanTitle}`);
+    return cleanTitle || 'New Conversation';
+  } catch (error) {
+    console.error('Error generating conversation title:', error);
+    // Fallback: use first 50 chars of message or "New Conversation"
+    const fallback = firstMessage.length > 50 
+      ? firstMessage.substring(0, 47) + '...' 
+      : firstMessage;
+    return fallback || 'New Conversation';
+  }
+}
+

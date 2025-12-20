@@ -1,8 +1,9 @@
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { config } from '../config';
 import { Conversation, Branch, StoredMessage } from '../types/conversation';
 import { Message } from '../types/chat';
 import path from 'path';
+import { generateConversationTitle } from './gemini';
 
 // Initialize Firestore with explicit credentials if available
 let firestoreOptions: { projectId: string; keyFilename?: string; credentials?: any } = {
@@ -89,6 +90,7 @@ export async function getOrCreateConversation(conversationId: string, userId: st
     return {
       id: conversationId,
       userId: data.userId,
+      title: data.title,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
     };
@@ -103,8 +105,8 @@ export async function getOrCreateConversation(conversationId: string, userId: st
     
     await conversationsRef.doc(conversationId).set({
       ...conversation,
-      createdAt: Firestore.Timestamp.fromDate(conversation.createdAt),
-      updatedAt: Firestore.Timestamp.fromDate(conversation.updatedAt),
+      createdAt: Timestamp.fromDate(conversation.createdAt),
+      updatedAt: Timestamp.fromDate(conversation.updatedAt),
     });
     
     return {
@@ -134,6 +136,7 @@ export async function getUserConversations(userId: string): Promise<Conversation
       return {
         id: doc.id,
         userId: data.userId,
+        title: data.title,
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       };
@@ -169,6 +172,61 @@ export async function verifyConversationOwnership(conversationId: string, userId
 }
 
 /**
+ * Delete a conversation and all its subcollections (branches and messages)
+ * Note: Firestore doesn't automatically delete subcollections, so we must do it manually
+ */
+export async function deleteConversation(conversationId: string, userId: string): Promise<void> {
+  try {
+    // First verify ownership
+    const ownsConversation = await verifyConversationOwnership(conversationId, userId);
+    if (!ownsConversation) {
+      throw new Error('Unauthorized: User does not own this conversation');
+    }
+
+    console.log(`[Firestore] Deleting conversation: ${conversationId}`);
+    
+    // Get all branches for this conversation
+    const branchesRef = conversationsRef
+      .doc(conversationId)
+      .collection('branches');
+    
+    const branchesSnapshot = await branchesRef.get();
+    
+    // Delete all messages in each branch, then delete the branch
+    const deletePromises: Promise<void>[] = [];
+    
+    for (const branchDoc of branchesSnapshot.docs) {
+      const branchId = branchDoc.id;
+      const messagesRef = branchesRef
+        .doc(branchId)
+        .collection('messages');
+      
+      const messagesSnapshot = await messagesRef.get();
+      
+      // Delete all messages in this branch
+      const messageDeletePromises = messagesSnapshot.docs.map((msgDoc) => 
+        msgDoc.ref.delete().then(() => {}) // Convert WriteResult to void
+      );
+      deletePromises.push(...messageDeletePromises);
+      
+      // Delete the branch document
+      deletePromises.push(branchDoc.ref.delete().then(() => {})); // Convert WriteResult to void
+    }
+    
+    // Wait for all subcollections to be deleted
+    await Promise.all(deletePromises);
+    
+    // Finally, delete the conversation document itself
+    await conversationsRef.doc(conversationId).delete();
+    
+    console.log(`[Firestore] Successfully deleted conversation: ${conversationId}`);
+  } catch (error) {
+    console.error(`[Firestore] Error deleting conversation:`, error);
+    throw error;
+  }
+}
+
+/**
  * Get or create a branch
  */
 export async function getOrCreateBranch(
@@ -200,8 +258,8 @@ export async function getOrCreateBranch(
     
     // Build the branch data object, excluding undefined values
     const branchData: any = {
-      createdAt: Firestore.Timestamp.fromDate(now),
-      updatedAt: Firestore.Timestamp.fromDate(now),
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
     };
     
     // Only include optional fields if they are defined
@@ -306,7 +364,8 @@ export async function loadBranchMessagesWithIds(
 export async function saveMessage(
   conversationId: string,
   branchId: string,
-  message: Message
+  message: Message,
+  generateTitleIfFirst?: boolean
 ): Promise<StoredMessage> {
   const messagesRef = conversationsRef
     .doc(conversationId)
@@ -327,7 +386,7 @@ export async function saveMessage(
   
   await messagesRef.doc(messageId).set({
     ...storedMessage,
-    timestamp: Firestore.Timestamp.fromDate(timestamp),
+    timestamp: Timestamp.fromDate(timestamp),
   });
   
   // Update branch and conversation timestamps
@@ -336,12 +395,36 @@ export async function saveMessage(
     .collection('branches')
     .doc(branchId)
     .update({
-      updatedAt: Firestore.Timestamp.fromDate(timestamp),
+      updatedAt: Timestamp.fromDate(timestamp),
     });
   
+  // Update conversation timestamp first (don't wait for title generation)
   await conversationsRef.doc(conversationId).update({
-    updatedAt: Firestore.Timestamp.fromDate(timestamp),
+    updatedAt: Timestamp.fromDate(timestamp),
   });
+  
+  // Generate title asynchronously if this is the first user message in the main branch
+  if (generateTitleIfFirst && message.role === 'user' && branchId === 'main') {
+    // Don't await - let this run in the background
+    (async () => {
+      try {
+        const conversationDoc = await conversationsRef.doc(conversationId).get();
+        if (conversationDoc.exists) {
+          const data = conversationDoc.data()!;
+          // Only generate title if conversation doesn't have one yet
+          if (!data.title) {
+            const title = await generateConversationTitle(message.content);
+            await conversationsRef.doc(conversationId).update({
+              title,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error generating conversation title:', error);
+        // Continue without title if generation fails
+      }
+    })();
+  }
   
   return storedMessage;
 }
