@@ -78,3 +78,6 @@ echo -e "${YELLOW}Next steps:${NC}"
 echo "1. Update frontend/.env.production with: VITE_API_BASE_URL=$SERVICE_URL"
 echo "2. Build and deploy frontend: cd frontend && npm run build && firebase deploy --only hosting"
 
+
+
+

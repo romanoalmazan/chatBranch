@@ -25,9 +25,9 @@ export default function Layout({ children, onNewChat }: LayoutProps) {
   };
 
   return (
-    <div className="flex h-full w-full bg-white dark:bg-gray-950 transition-colors duration-300">
+    <div className="flex h-full w-full bg-white dark:bg-gray-950 transition-colors duration-300 overflow-hidden">
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-0 w-full">
+      <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
         {/* Header */}
         <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between flex-shrink-0 transition-all duration-300 sticky top-0 z-50">
           <div className="flex items-center gap-3 group cursor-pointer">

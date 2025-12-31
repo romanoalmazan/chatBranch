@@ -291,3 +291,6 @@ firebase deploy --only hosting
 - Set up monitoring and alerts
 - Configure CI/CD pipeline for automatic deployments
 
+
+
+

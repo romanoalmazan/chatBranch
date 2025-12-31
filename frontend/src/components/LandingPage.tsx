@@ -7,7 +7,7 @@ export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
+    <div className="bg-gray-50 dark:bg-gray-950 flex flex-col h-full w-full overflow-y-auto transition-colors duration-300">
       {/* Navigation */}
       <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
